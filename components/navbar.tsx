@@ -5,15 +5,26 @@ import Link from "next/link"
 import { Menu, X, LayoutDashboard, MessageSquare, User, LogOut } from "lucide-react"
 import Image from "next/image"
 import { createClient } from "@/lib/supabase/client"
-import { useRouter } from "next/navigation"
+import { useRouter, usePathname } from "next/navigation"
 import type { User as SupabaseUser } from "@supabase/supabase-js"
 import { ThemeSwitcher } from "@/components/theme-switcher"
+import { SubmitLoading } from "@/components/ui/submit-loading"
 
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false)
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false)
   const [user, setUser] = useState<SupabaseUser | null>(null)
+  const [isNavigating, setIsNavigating] = useState(false)
+  const [targetPath, setTargetPath] = useState("")
+  const [isLoggingOut, setIsLoggingOut] = useState(false)
+  
   const router = useRouter()
+  const pathname = usePathname()
+
+  useEffect(() => {
+    setIsNavigating(false)
+    setTargetPath("")
+  }, [pathname])
 
   useEffect(() => {
     const supabase = createClient()
@@ -31,11 +42,30 @@ export default function Navbar() {
     return () => subscription.unsubscribe()
   }, [])
 
-  const handleLogout = async () => {
-    const supabase = createClient()
-    await supabase.auth.signOut()
+  const handleNavClick = (href: string) => {
+    if (pathname !== href) {
+      setIsNavigating(true)
+      setTargetPath(href)
+    }
     setIsUserMenuOpen(false)
-    router.push("/")
+    setIsOpen(false)
+  }
+
+  const handleLogout = async () => {
+    setIsLoggingOut(true)
+    setIsUserMenuOpen(false)
+    setIsOpen(false)
+    try {
+      const supabase = createClient()
+      await supabase.auth.signOut()
+      if (pathname !== "/") {
+        router.push("/")
+      } else {
+        setIsLoggingOut(false)
+      }
+    } catch {
+      setIsLoggingOut(false)
+    }
   }
 
   const handleSmoothScroll = (e: React.MouseEvent<HTMLAnchorElement>, targetId: string) => {
@@ -117,7 +147,11 @@ export default function Navbar() {
                     <div className="absolute right-0 mt-2 w-56 bg-background border border-border rounded-lg shadow-lg py-2 z-50">
                       <Link
                         href="/dashboard"
-                        onClick={() => setIsUserMenuOpen(false)}
+                        onClick={(e) => {
+                          e.preventDefault()
+                          handleNavClick("/dashboard")
+                          router.push("/dashboard")
+                        }}
                         className="flex items-center gap-3 px-4 py-2.5 hover:bg-accent transition"
                       >
                         <LayoutDashboard size={18} />
@@ -125,7 +159,11 @@ export default function Navbar() {
                       </Link>
                       <Link
                         href="/dashboard/chatbots"
-                        onClick={() => setIsUserMenuOpen(false)}
+                        onClick={(e) => {
+                          e.preventDefault()
+                          handleNavClick("/dashboard/chatbots")
+                          router.push("/dashboard/chatbots")
+                        }}
                         className="flex items-center gap-3 px-4 py-2.5 hover:bg-accent transition"
                       >
                         <MessageSquare size={18} />
@@ -133,7 +171,11 @@ export default function Navbar() {
                       </Link>
                       <Link
                         href="/dashboard/profile"
-                        onClick={() => setIsUserMenuOpen(false)}
+                        onClick={(e) => {
+                          e.preventDefault()
+                          handleNavClick("/dashboard/profile")
+                          router.push("/dashboard/profile")
+                        }}
                         className="flex items-center gap-3 px-4 py-2.5 hover:bg-accent transition"
                       >
                         <User size={18} />
@@ -142,6 +184,7 @@ export default function Navbar() {
                       <div className="border-t border-border my-1" />
                       <button
                         onClick={handleLogout}
+                        disabled={isLoggingOut}
                         className="flex items-center gap-3 px-4 py-2.5 hover:bg-accent transition w-full text-left text-destructive"
                       >
                         <LogOut size={18} />
@@ -212,7 +255,12 @@ export default function Navbar() {
               <div className="pt-4 flex flex-col gap-2 border-t border-border">
                 <Link 
                   href="/dashboard" 
-                  onClick={() => setIsOpen(false)}
+                  onClick={(e) => {
+                    e.preventDefault()
+                    setIsOpen(false)
+                    handleNavClick("/dashboard")
+                    router.push("/dashboard")
+                  }}
                   className="flex items-center gap-3 py-2 text-foreground hover:text-primary"
                 >
                   <LayoutDashboard size={18} />
@@ -220,7 +268,12 @@ export default function Navbar() {
                 </Link>
                 <Link 
                   href="/dashboard/chatbots" 
-                  onClick={() => setIsOpen(false)}
+                  onClick={(e) => {
+                    e.preventDefault()
+                    setIsOpen(false)
+                    handleNavClick("/dashboard/chatbots")
+                    router.push("/dashboard/chatbots")
+                  }}
                   className="flex items-center gap-3 py-2 text-foreground hover:text-primary"
                 >
                   <MessageSquare size={18} />
@@ -228,14 +281,23 @@ export default function Navbar() {
                 </Link>
                 <Link 
                   href="/dashboard/profile" 
-                  onClick={() => setIsOpen(false)}
+                  onClick={(e) => {
+                    e.preventDefault()
+                    setIsOpen(false)
+                    handleNavClick("/dashboard/profile")
+                    router.push("/dashboard/profile")
+                  }}
                   className="flex items-center gap-3 py-2 text-foreground hover:text-primary"
                 >
                   <User size={18} />
                   <span>Profile</span>
                 </Link>
                 <button
-                  onClick={handleLogout}
+                  onClick={() => {
+                    setIsOpen(false)
+                    handleLogout()
+                  }}
+                  disabled={isLoggingOut}
                   className="flex items-center gap-3 py-2 text-destructive hover:text-destructive/80 text-left"
                 >
                   <LogOut size={18} />
@@ -258,6 +320,8 @@ export default function Navbar() {
           </div>
         )}
       </div>
+
+      <SubmitLoading isLoading={isNavigating || isLoggingOut} text={isLoggingOut ? "Sedang Keluar..." : "Memuat Halaman..."} />
     </nav>
   )
 }
