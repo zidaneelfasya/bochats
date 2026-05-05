@@ -192,7 +192,7 @@ export default function DashboardPage() {
                 <CardContent>
                   <div className="text-2xl font-bold">{stats.totalChats.toLocaleString()}</div>
                   <p className="text-xs text-muted-foreground">
-                    From all Telegram conversations
+                    conversations
                   </p>
                 </CardContent>
               </Card>
