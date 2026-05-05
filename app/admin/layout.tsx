@@ -6,8 +6,10 @@ import { createClient } from '@/lib/supabase/server';
 import { createClient as createServiceClient } from '@supabase/supabase-js';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
-import { LayoutDashboard, Users, Shield } from 'lucide-react';
+import { LayoutDashboard, Users, Shield, Bot } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { headers } from 'next/headers';
+import { SidebarProvider, Sidebar, SidebarToggle } from '@/components/dashboard/responsive-sidebar';
 
 const _geist = Geist({ subsets: ["latin"] })
 const _geistMono = Geist_Mono({ subsets: ["latin"] })
@@ -80,85 +82,58 @@ export default async function AdminLayout({
     console.error('[Admin Layout] Error fetching profile:', profileError);
   }
 
+  // Get current pathname to prevent infinite redirect
+  const headersList = await headers();
+  const currentPath = headersList.get('x-invoke-path') || '';
+  const isNoAccessPage = currentPath.includes('/admin/no-access');
+
   if (!profile || profile.role !== 'admin') {
+    if (isNoAccessPage) {
+      // Allow rendering the no-access page without sidebar
+      return (
+        <div className="min-h-screen bg-background">
+          {children}
+        </div>
+      );
+    }
+    
     console.log('[Admin Layout] Access denied. Redirecting to no-access page.');
     return redirect('/admin/no-access');
   }
 
   console.log('[Admin Layout] ✓ Admin access granted');
 
-  const menuItems = [
-    {
-      title: 'Dashboard',
-      href: '/admin/dashboard',
-      icon: LayoutDashboard,
-    },
-    {
-      title: 'Pengguna',
-      href: '/admin/users',
-      icon: Users,
-    },
-  ];
-
   return (
-    <>
-      <div className="min-h-screen bg-background">
-        {/* Sidebar */}
-        <aside className="fixed left-0 top-0 z-40 h-screen w-64 border-r bg-card shadow-sm">
-          <div className="flex h-full flex-col">
-            {/* Header */}
-            <div className="flex h-16 items-center gap-2 border-b px-6 bg-card">
-              <Shield className="h-6 w-6 text-primary" />
-              <div>
-                <h2 className="font-bold text-foreground">Admin Panel</h2>
-                <p className="text-xs text-muted-foreground">Ragly</p>
-              </div>
-            </div>
-
-            {/* Navigation */}
-            <nav className="flex-1 space-y-1 p-4">
-              {menuItems.map((item) => (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className={cn(
-                    "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
-                    "hover:bg-accent hover:text-accent-foreground"
-                  )}
-                >
-                  <item.icon className="h-4 w-4" />
-                  {item.title}
-                </Link>
-              ))}
-            </nav>
-
-            {/* User Info */}
-            <div className="border-t p-4 bg-card">
-              <div className="flex items-center gap-3">
-                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground text-sm font-medium">
-                  {profile.full_name?.[0]?.toUpperCase() || profile.email[0].toUpperCase()}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium truncate">
-                    {profile.full_name || profile.email}
-                  </p>
-                  <p className="text-xs text-muted-foreground truncate">
-                    {profile.email}
-                  </p>
-                </div>
-              </div>
+    <div className="min-h-screen bg-background">
+      <SidebarProvider>
+        <Sidebar user={user} variant="admin" />
+        
+        {/* Main content */}
+        <main className="transition-all duration-300 lg:ml-64">
+          {/* Mobile header */}
+          <div className="sticky top-0 z-40 lg:hidden border-b border-border bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/60">
+            <div className="flex h-16 items-center justify-between px-4">
+              <Link href="/admin/dashboard" className="flex items-center gap-2">
+                <Shield className="h-6 w-6 text-primary" />
+                <span className="font-bold text-foreground">Admin Panel</span>
+              </Link>
+              <SidebarToggle />
             </div>
           </div>
-        </aside>
-
-        {/* Main Content */}
-        <main className="ml-64 min-h-screen bg-background">
-          <div className="mx-auto max-w-6xl px-8 py-8">
-            {children}
+          
+          {/* Desktop toggle button */}
+          <div className="hidden lg:block fixed top-4 left-4 z-50 sidebar-toggle-desktop">
+            <SidebarToggle />
+          </div>
+          
+          <div className="p-4 lg:p-6 lg:pt-16">
+            <div className="mx-auto max-w-6xl">
+              {children}
+            </div>
           </div>
         </main>
-      </div>
+      </SidebarProvider>
       <Analytics />
-    </>
-  )
+    </div>
+  );
 }

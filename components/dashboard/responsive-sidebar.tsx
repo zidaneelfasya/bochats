@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import Link from 'next/link';
-import { Bot, User, Menu, X, LayoutDashboard, Settings, LogOut, ChevronUp } from 'lucide-react';
+import { Bot, User, Menu, X, LayoutDashboard, Settings, LogOut, ChevronUp, Users, Shield } from 'lucide-react';
 import { ThemeSwitcher } from '@/components/theme-switcher';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useRouter, usePathname } from 'next/navigation';
@@ -122,7 +122,7 @@ export function SidebarProvider({ children }: SidebarProviderProps) {
 }
 
 // Sidebar Component
-export function Sidebar({ user }: { user: any }) {
+export function Sidebar({ user, variant = "default" }: { user: any, variant?: "default" | "admin" }) {
   const { isOpen, close } = useContext(SidebarContext);
   const router = useRouter();
   const pathname = usePathname();
@@ -136,12 +136,20 @@ export function Sidebar({ user }: { user: any }) {
   }, [pathname]);
 
   // Definisikan navItems di client component
-  const navItems = [
+  const defaultNavItems = [
     { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
     { name: 'Chatbots', href: '/dashboard/chatbots', icon: Bot },
     { name: 'Profile', href: '/dashboard/profile', icon: User },
     { name: 'Settings', href: '/dashboard/settings', icon: Settings },
   ];
+
+  const adminNavItems = [
+    { name: 'Admin Dashboard', href: '/admin/dashboard', icon: Shield },
+    { name: 'Pengguna', href: '/admin/users', icon: Users },
+    { name: 'Back to Client', href: '/dashboard', icon: Bot },
+  ];
+
+  const navItems = variant === "admin" ? adminNavItems : defaultNavItems;
   
   const handleNavClick = (href: string) => {
     // If navigating to a different page, trigger the loading state
@@ -195,9 +203,13 @@ export function Sidebar({ user }: { user: any }) {
             {/* <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-primary-foreground">
               ◆
             </div> */}
-            <Image src="/images/logo-ragly.svg" alt="Logo" width={32} height={32}>
-            </Image>
-            Ragly
+            <Image src="/images/logo-ragly.svg" alt="Logo" width={32} height={32} />
+            <div className="flex flex-col">
+              <span className="leading-tight">Ragly</span>
+              {variant === "admin" && (
+                <span className="text-[10px] uppercase tracking-wider text-muted-foreground leading-tight">Admin Panel</span>
+              )}
+            </div>
           </Link>
             
             {/* Close button for mobile */}
