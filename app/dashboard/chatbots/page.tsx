@@ -138,8 +138,20 @@ export default function ChatbotsPage() {
           /* Chatbots Grid */
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {chatbots.map((chatbot) => (
-              <Card key={chatbot.id} className="hover:shadow-lg transition-shadow cursor-pointer group relative">
-                <CardHeader className="pb-4" onClick={() => window.location.href = `/dashboard/chatbots/${chatbot.id}`}>
+              <Card 
+                key={chatbot.id} 
+                className="hover:shadow-lg transition-shadow cursor-pointer group relative"
+                onClick={(e) => {
+                  // 1. Mencegah event dari React Portal (Dropdown Menu / Delete Dialog yang ter-render di luar DOM Card)
+                  if (!e.currentTarget.contains(e.target as Node)) return;
+                  
+                  // 2. Mencegah trigger dari elemen interaktif di dalam Card (tombol atau link)
+                  if ((e.target as Element).closest('button, a')) return;
+
+                  window.location.href = `/dashboard/chatbots/${chatbot.id}`;
+                }}
+              >
+                <CardHeader className="pb-4">
                   <div className="flex items-start justify-between">
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 rounded-lg bg-gradient-to-r from-primary to-secondary flex items-center justify-center">
@@ -195,7 +207,7 @@ export default function ChatbotsPage() {
                   </div>
                 </CardHeader>
                 
-                <CardContent className="space-y-4" onClick={() => window.location.href = `/dashboard/chatbots/${chatbot.id}`}>
+                <CardContent className="space-y-4">
                   <div className="flex items-center justify-between">
                     <Badge className={getStatusColor(chatbot.status)}>
                       {chatbot.status}
