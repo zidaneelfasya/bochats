@@ -43,7 +43,11 @@ export default function AuthenticationPage() {
         password: loginPassword,
       });
       if (error) throw error;
-      router.push("/dashboard");
+      
+      // Delay navigation slightly to let auth cookies settle
+      setTimeout(() => {
+        router.push("/dashboard");
+      }, 500);
     } catch (error: unknown) {
       setLoginError(error instanceof Error ? error.message : "An error occurred");
     } finally {

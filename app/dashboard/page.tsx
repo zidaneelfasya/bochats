@@ -29,22 +29,24 @@ export default function DashboardPage() {
       setIsLoadingStats(true);
       const chatbots = await fetchChatbots();
       
-      // Fetch telegram stats for all chatbots
-      let totalConversations = 0;
-      
-      for (const chatbot of chatbots) {
+      // Fetch telegram stats for all chatbots in parallel
+      const statsPromises = chatbots.map(async (chatbot: any) => {
         try {
           const response = await fetch(`/api/chatbots/${chatbot.id}/telegram-stats?timeframe=all`);
           if (response.ok) {
             const data = await response.json();
             if (data.success && data.stats) {
-              totalConversations += data.stats.totalConversations || 0;
+              return data.stats.totalConversations || 0;
             }
           }
         } catch (error) {
           console.error(`Failed to load stats for chatbot ${chatbot.id}:`, error);
         }
-      }
+        return 0;
+      });
+
+      const statsResults = await Promise.all(statsPromises);
+      const totalConversations = statsResults.reduce((sum, val) => sum + val, 0);
       
       setStats({
         totalChatbots: chatbots.length,
