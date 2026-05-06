@@ -10,25 +10,38 @@
   // Helper to determine base URL from script tag
   function getBaseUrl() {
     if (window.RAGLY_API_URL) return window.RAGLY_API_URL;
-    
+
+    // Prefer document.currentScript when available (works for normal & dynamically-inserted scripts)
+    try {
+      const current = document.currentScript || document.getElementById('ragly-widget-script');
+      if (current && current.src) {
+        const url = new URL(current.src);
+        return url.origin;
+      }
+    } catch (e) {
+      // fall through to scanning scripts
+    }
+
     // Fallback: try to find the script tag that loaded this widget
     const scripts = document.getElementsByTagName('script');
     for (let i = 0; i < scripts.length; i++) {
-        if (scripts[i].src && scripts[i].src.includes('/widget/chatbot-widget.js')) {
-            try {
-                const url = new URL(scripts[i].src);
-                return url.origin;
-            } catch(e) {}
-        }
+        try {
+          if (scripts[i].src && scripts[i].src.includes('/widget/chatbot-widget.js')) {
+              const url = new URL(scripts[i].src);
+              return url.origin;
+          }
+        } catch (e) {}
     }
-    
+
+    // Last resort
     return window.location.origin;
   }
 
   // Configuration
   const CONFIG = {
     apiBaseUrl: getBaseUrl(),
-    chatbotId: window.RAGLY_CHATBOT_ID || '',
+    // Allow configuration from global vars or from script data-attributes (data-chatbot-id)
+    chatbotId: window.RAGLY_CHATBOT_ID || (document.currentScript && document.currentScript.dataset && document.currentScript.dataset.chatbotId) || '',
     position: window.RAGLY_POSITION || 'bottom-right', // bottom-right, bottom-left
     theme: window.RAGLY_THEME || 'light', // light, dark, auto
     primaryColor: window.RAGLY_PRIMARY_COLOR || '#4F46E5',
@@ -41,7 +54,7 @@
 
   // Validate chatbot ID
   if (!CONFIG.chatbotId) {
-    console.error('Ragly Widget Error: RAGLY_CHATBOT_ID is required');
+    console.error('Ragly Widget Error: RAGLY_CHATBOT_ID is required. Provide it via window.RAGLY_CHATBOT_ID or add data-chatbot-id on the script tag. Example: <script src="https://your-domain/widget/chatbot-widget.js" data-chatbot-id="YOUR_ID"></script>');
     return;
   }
 
