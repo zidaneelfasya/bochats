@@ -31,6 +31,18 @@ export default function AuthenticationPage() {
   const [signupError, setSignupError] = useState<string | null>(null);
   const [signupLoading, setSignupLoading] = useState(false);
 
+  const waitForSessionPersistence = async (supabase: ReturnType<typeof createClient>) => {
+    for (let attempt = 0; attempt < 10; attempt += 1) {
+      const { data } = await supabase.auth.getSession();
+
+      if (data.session) {
+        return;
+      }
+
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    }
+  };
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     const supabase = createClient();
@@ -43,11 +55,9 @@ export default function AuthenticationPage() {
         password: loginPassword,
       });
       if (error) throw error;
-      
-      // Delay navigation slightly to let auth cookies settle
-      setTimeout(() => {
-        router.push("/dashboard");
-      }, 500);
+
+      await waitForSessionPersistence(supabase);
+      window.location.replace("/dashboard");
     } catch (error: unknown) {
       setLoginError(error instanceof Error ? error.message : "An error occurred");
     } finally {
