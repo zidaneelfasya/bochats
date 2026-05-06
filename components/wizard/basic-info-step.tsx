@@ -53,7 +53,7 @@ export default function BasicInfoStep({ data, setData }: BasicInfoStepProps) {
           </Label>
           <Select value={data.model} disabled>
             <SelectTrigger id="model" className="bg-muted border-border h-10 cursor-not-allowed opacity-60">
-              <SelectValue>Google Gemini</SelectValue>
+              <SelectValue>Gemini</SelectValue>
             </SelectTrigger>
           </Select>
           <p className="text-xs text-muted-foreground mt-1">Default AI model (cannot be changed)</p>

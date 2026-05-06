@@ -22,7 +22,7 @@ export default function CreateChatbotPage() {
   
   const [formData, setFormData] = useState({
     name: '',
-    model: 'gpt-4-turbo',
+    model: 'Gemini',
     language: 'en',
     isPublic: false,
     personality: '',
