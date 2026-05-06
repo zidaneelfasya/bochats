@@ -13,6 +13,17 @@ const DECISION_TYPES = {
 };
 
 // Decision Router - sama seperti di server.js
+export async function OPTIONS() {
+  return new NextResponse(null, {
+    status: 200,
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    },
+  });
+}
+
 async function decisionRouter(message: string, chatbotData: any) {
   try {
     console.log(`🔍 Decision Router: Analyzing intent for message: "${message}"`);
@@ -243,29 +254,23 @@ export async function POST(
     console.log('📨 Message:', message);
     console.log('🔑 Session ID:', sessionId);
 
-    // Get user session
+    // Get chatbot data, we allow public access for chat
     const supabase = await createClient();
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-
-    if (authError || !user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
-    }
-
-    // Get chatbot data
     const { data: chatbotData, error: chatbotError } = await supabase
       .from('chatbots')
       .select('*')
       .eq('id', chatbotId)
-      .eq('user_id', user.id)
       .single();
 
     if (chatbotError || !chatbotData) {
       return NextResponse.json(
-        { error: 'Chatbot not found or access denied' },
-        { status: 404 }
+        { error: 'Chatbot not found' },
+        { 
+          status: 404,
+          headers: {
+            'Access-Control-Allow-Origin': '*',
+          } 
+        }
       );
     }
 
