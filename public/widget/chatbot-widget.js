@@ -7,14 +7,35 @@
 (function() {
   'use strict';
 
+  // Helper to determine base URL from script tag
+  function getBaseUrl() {
+    if (window.RAGLY_API_URL) return window.RAGLY_API_URL;
+    
+    // Fallback: try to find the script tag that loaded this widget
+    const scripts = document.getElementsByTagName('script');
+    for (let i = 0; i < scripts.length; i++) {
+        if (scripts[i].src && scripts[i].src.includes('/widget/chatbot-widget.js')) {
+            try {
+                const url = new URL(scripts[i].src);
+                return url.origin;
+            } catch(e) {}
+        }
+    }
+    
+    return window.location.origin;
+  }
+
   // Configuration
   const CONFIG = {
-    apiBaseUrl: window.RAGLY_API_URL || window.location.origin,
+    apiBaseUrl: getBaseUrl(),
     chatbotId: window.RAGLY_CHATBOT_ID || '',
     position: window.RAGLY_POSITION || 'bottom-right', // bottom-right, bottom-left
     theme: window.RAGLY_THEME || 'light', // light, dark, auto
     primaryColor: window.RAGLY_PRIMARY_COLOR || '#4F46E5',
     buttonSize: window.RAGLY_BUTTON_SIZE || '60px',
+    borderRadius: window.RAGLY_BORDER_RADIUS || '16px',
+    borderColor: window.RAGLY_BORDER_COLOR || 'transparent',
+    borderWidth: window.RAGLY_BORDER_WIDTH || '0px',
     zIndex: window.RAGLY_Z_INDEX || '9999',
   };
 
@@ -91,7 +112,8 @@
           height: 600px;
           max-height: calc(100vh - ${parseInt(CONFIG.buttonSize) + 50}px);
           background: white;
-          border-radius: 16px;
+          border: ${CONFIG.borderWidth} solid ${CONFIG.borderColor};
+          border-radius: ${CONFIG.borderRadius};
           box-shadow: 0 8px 32px rgba(0,0,0,0.12);
           display: none;
           flex-direction: column;
