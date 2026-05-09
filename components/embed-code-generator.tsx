@@ -50,7 +50,9 @@ export default function EmbedCodeGenerator({ chatbotId, chatbotName }: EmbedCode
   const [borderStyle, setBorderStyle] = useState('solid');
   const [isWidgetActive, setIsWidgetActive] = useState(false);
 
-  const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
+  // Widget host URL: prefer explicit public env var for production widgets
+  // Set NEXT_PUBLIC_RAGLY_WIDGET_URL in Vercel (e.g. https://ragly-chat.vercel.app)
+  const baseUrl = (process.env.NEXT_PUBLIC_RAGLY_WIDGET_URL as string) || (typeof window !== 'undefined' ? window.location.origin : '');
 
   // Cleanup widget on unmount
   useEffect(() => {
