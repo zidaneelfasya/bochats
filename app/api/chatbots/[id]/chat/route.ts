@@ -254,7 +254,7 @@ export async function POST(
     console.log('📋 Chatbot ID:', chatbotId);
     console.log('📨 Message:', message);
     console.log('🔑 Session ID:', sessionId);
-    const requestIp = extractClientIp(request) || undefined;
+    const requestIp = extractClientIp(request);
     const userAgent = request.headers.get('user-agent') || undefined;
 
     // Validate API Key
@@ -282,7 +282,7 @@ export async function POST(
         source: 'widget',
         requestPath: request.nextUrl.pathname,
         requestMethod: request.method,
-        requestIp,
+        requestIp: requestIp ?? undefined,
         userAgent,
         message,
         response: 'Rate limit exceeded',
@@ -314,7 +314,7 @@ export async function POST(
         source: 'widget',
         requestPath: request.nextUrl.pathname,
         requestMethod: request.method,
-        requestIp,
+        requestIp: requestIp ?? undefined,
         userAgent,
         message,
         response: 'Chatbot not found',
@@ -392,7 +392,7 @@ export async function POST(
         source: 'widget',
         requestPath: request.nextUrl.pathname,
         requestMethod: request.method,
-        requestIp,
+        requestIp: requestIp ?? undefined,
         userAgent,
         message,
         response: aiResponse,
@@ -423,7 +423,7 @@ export async function POST(
         source: 'widget',
         requestPath: request.nextUrl.pathname,
         requestMethod: request.method,
-        requestIp,
+        requestIp: requestIp ?? undefined,
         userAgent,
         message,
         response: aiResponse,
