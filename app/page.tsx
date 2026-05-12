@@ -18,6 +18,7 @@ export default function Home() {
       <ChatPreview />
       {/* <VideoTutorial /> */}
       {/* <ProductDemoSection /> */}
+      
       <ProductJourneySection />
       <PricingModern />
       <CTAModern />
