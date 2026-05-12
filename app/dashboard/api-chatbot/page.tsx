@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 
-const endpointExample = `POST /api/chatbots/{chatbotId}/chat
+const endpointExample = `POST /api/v1/chatbots/{chatbotId}/chat
 
 Headers:
   Content-Type: application/json
@@ -20,7 +20,7 @@ Body:
     "sessionId": "client-session-123"
   }`;
 
-const fetchExample = `const response = await fetch('https://your-domain.com/api/chatbots/{chatbotId}/chat', {
+const fetchExample = `const response = await fetch('https://ragly-chat.vercel.app/api/v1/chatbots/{chatbotId}/chat', {
   method: 'POST',
   headers: {
     'Content-Type': 'application/json',
@@ -35,7 +35,7 @@ const fetchExample = `const response = await fetch('https://your-domain.com/api/
 const data = await response.json();
 console.log(data.reply);`;
 
-const curlExample = `curl -X POST "https://your-domain.com/api/chatbots/{chatbotId}/chat" \
+const curlExample = `curl -X POST "https://your-domain.com/api/v1/chatbots/{chatbotId}/chat" \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer <YOUR_API_KEY>" \
   -d '{
@@ -84,9 +84,9 @@ export default function ApiChatbotGuidePage() {
           <Badge className="border border-white/15 bg-white/10 text-white hover:bg-white/15">No widget required</Badge>
         </div>
         <div className="mt-4 max-w-3xl space-y-3">
-          <h1 className="text-3xl font-bold tracking-tight md:text-4xl">API Chatbot Guide</h1>
+          <h1 className="text-3xl font-bold tracking-tight md:text-4xl">API Chatbot Documentation</h1>
           <p className="text-sm leading-6 text-slate-300 md:text-base">
-            Gunakan Ragly langsung lewat API tanpa widget. Developer cukup memanggil endpoint chat yang sama seperti widget, lalu membangun UI sendiri di frontend mereka.
+            Dokumentasi ini ditujukan untuk developer yang ingin memakai chatbot Ragly langsung lewat API versioned. Gunakan endpoint `/api/v1/...` untuk integrasi server-to-server atau frontend milik Anda sendiri.
           </p>
         </div>
         <div className="mt-6 flex flex-wrap gap-3 text-sm text-slate-300">
@@ -99,10 +99,10 @@ export default function ApiChatbotGuidePage() {
       <div className="grid gap-4 lg:grid-cols-3">
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-base"><ArrowLeft className="h-4 w-4 rotate-180" /> 1. Choose chatbot</CardTitle>
+            <CardTitle className="flex items-center gap-2 text-base"><ArrowLeft className="h-4 w-4 rotate-180" /> 1. Select chatbot</CardTitle>
           </CardHeader>
           <CardContent className="text-sm text-muted-foreground">
-            Ambil <span className="font-semibold text-foreground">chatbotId</span> dari halaman detail chatbot. ID ini dipakai di URL endpoint.
+            Ambil <span className="font-semibold text-foreground">chatbotId</span> dari halaman detail chatbot. ID ini dipakai langsung di path endpoint versioned.
           </CardContent>
         </Card>
         <Card>
@@ -110,7 +110,7 @@ export default function ApiChatbotGuidePage() {
             <CardTitle className="flex items-center gap-2 text-base"><Key className="h-4 w-4" /> 2. Send API key</CardTitle>
           </CardHeader>
           <CardContent className="text-sm text-muted-foreground">
-            Kirim API key lewat header <span className="font-semibold text-foreground">Authorization: Bearer ...</span>. Tidak perlu tampilkan key di UI publik.
+            Kirim API key lewat header <span className="font-semibold text-foreground">Authorization: Bearer ...</span>. Jangan expose key di client publik.
           </CardContent>
         </Card>
         <Card>
@@ -118,7 +118,7 @@ export default function ApiChatbotGuidePage() {
             <CardTitle className="flex items-center gap-2 text-base"><MessageSquareText className="h-4 w-4" /> 3. Send message</CardTitle>
           </CardHeader>
           <CardContent className="text-sm text-muted-foreground">
-            Kirim body minimal: <span className="font-semibold text-foreground">message</span> dan opsional <span className="font-semibold text-foreground">sessionId</span> untuk menjaga konteks percakapan.
+            Kirim body minimal: <span className="font-semibold text-foreground">message</span> dan opsional <span className="font-semibold text-foreground">sessionId</span> untuk menjaga konteks percakapan antar request.
           </CardContent>
         </Card>
       </div>
@@ -134,11 +134,11 @@ export default function ApiChatbotGuidePage() {
           <Card className="border-amber-200/70 bg-amber-50/70 dark:border-amber-900/40 dark:bg-amber-950/30">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-base text-amber-900 dark:text-amber-100">
-                <TriangleAlert className="h-4 w-4" /> No mode needed
+                <TriangleAlert className="h-4 w-4" /> Versioned API format
               </CardTitle>
             </CardHeader>
             <CardContent className="text-sm text-amber-900/80 dark:text-amber-100/80">
-              Untuk sekarang, cukup gunakan endpoint chat langsung. Tidak perlu mengirim parameter mode dari frontend.
+              Untuk integrasi baru, gunakan pola `/api/v1/...` agar lebih mudah dipelihara dan konsisten dengan versi API lain di Ragly.
             </CardContent>
           </Card>
 
