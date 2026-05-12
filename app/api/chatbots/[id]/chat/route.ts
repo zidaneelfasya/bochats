@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { authenticateApiKey, checkApiKeyRateLimit, extractClientIp, recordApiKeyUsage } from '@/lib/api-key-usage';
 
 // Configuration
 const LLM_SERVICE_URL = process.env.LLM_SERVICE_URL || 'http://localhost:8000';
@@ -253,9 +254,51 @@ export async function POST(
     console.log('📋 Chatbot ID:', chatbotId);
     console.log('📨 Message:', message);
     console.log('🔑 Session ID:', sessionId);
+    const requestIp = extractClientIp(request);
+    const userAgent = request.headers.get('user-agent') || undefined;
+
+    // Validate API Key
+    const authHeader = request.headers.get('Authorization');
+    const apiKey = authHeader && authHeader.startsWith('Bearer ') ? authHeader.split(' ')[1] : null;
+
+    if (!apiKey) {
+      return NextResponse.json({ error: 'Unauthorized: Missing API Key' }, { status: 401 });
+    }
+
+    const supabase = await createClient();
+
+    const apiKeyRecord = await authenticateApiKey(apiKey, supabase);
+    if (!apiKeyRecord) {
+      return NextResponse.json({ error: 'Unauthorized: Invalid API Key' }, { status: 401 });
+    }
+
+    const rateLimit = await checkApiKeyRateLimit(apiKeyRecord.id, supabase);
+    if (!rateLimit.allowed) {
+      await recordApiKeyUsage(supabase, {
+        apiKey: apiKeyRecord,
+        chatbotId,
+        chatbotName: 'Unknown',
+        sessionId,
+        source: 'widget',
+        requestPath: request.nextUrl.pathname,
+        requestMethod: request.method,
+        requestIp,
+        userAgent,
+        message,
+        response: 'Rate limit exceeded',
+        decision: 'RATE_LIMITED',
+        durationMs: Date.now() - startTime,
+        success: false,
+        errorMessage: `Rate limit exceeded: ${rateLimit.currentCount}/${rateLimit.limitPerMinute} requests per minute`,
+      });
+
+      return NextResponse.json(
+        { error: 'Too Many Requests', message: 'API key rate limit exceeded' },
+        { status: 429 }
+      );
+    }
 
     // Get chatbot data, we allow public access for chat
-    const supabase = await createClient();
     const { data: chatbotData, error: chatbotError } = await supabase
       .from('chatbots')
       .select('*')
@@ -263,6 +306,24 @@ export async function POST(
       .single();
 
     if (chatbotError || !chatbotData) {
+      await recordApiKeyUsage(supabase, {
+        apiKey: apiKeyRecord,
+        chatbotId,
+        chatbotName: 'Unknown',
+        sessionId,
+        source: 'widget',
+        requestPath: request.nextUrl.pathname,
+        requestMethod: request.method,
+        requestIp,
+        userAgent,
+        message,
+        response: 'Chatbot not found',
+        decision: 'ERROR',
+        durationMs: Date.now() - startTime,
+        success: false,
+        errorMessage: 'Chatbot not found',
+      });
+
       return NextResponse.json(
         { error: 'Chatbot not found' },
         { 
@@ -323,6 +384,23 @@ export async function POST(
         console.error('❌ Error saving conversation:', insertError);
       }
 
+      await recordApiKeyUsage(supabase, {
+        apiKey: apiKeyRecord,
+        chatbotId,
+        chatbotName: chatbotData.name,
+        sessionId,
+        source: 'widget',
+        requestPath: request.nextUrl.pathname,
+        requestMethod: request.method,
+        requestIp,
+        userAgent,
+        message,
+        response: aiResponse,
+        decision,
+        durationMs: duration,
+        success: true,
+      });
+
       return NextResponse.json({
         success: true,
         reply: aiResponse,
@@ -336,6 +414,24 @@ export async function POST(
       // Fallback response
       aiResponse = chatbotData.fallback_message || 
         "Maaf, terjadi kesalahan saat memproses pertanyaan Anda. Silakan coba lagi.";
+
+      await recordApiKeyUsage(supabase, {
+        apiKey: apiKeyRecord,
+        chatbotId,
+        chatbotName: chatbotData.name,
+        sessionId,
+        source: 'widget',
+        requestPath: request.nextUrl.pathname,
+        requestMethod: request.method,
+        requestIp,
+        userAgent,
+        message,
+        response: aiResponse,
+        decision: 'ERROR',
+        durationMs: Date.now() - startTime,
+        success: false,
+        errorMessage: aiError.message,
+      });
       
       return NextResponse.json({
         success: true,

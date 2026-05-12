@@ -410,6 +410,7 @@
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${window.RAGLY_API_KEY || ''}`
         },
         body: JSON.stringify({ message, sessionId }),
       });

@@ -50,9 +50,31 @@ export default function EmbedCodeGenerator({ chatbotId, chatbotName }: EmbedCode
   const [borderStyle, setBorderStyle] = useState('solid');
   const [isWidgetActive, setIsWidgetActive] = useState(false);
 
+  const [apiKeys, setApiKeys] = useState<any[]>([]);
+  const [selectedApiKey, setSelectedApiKey] = useState("");
+
   // Widget host URL: prefer explicit public env var for production widgets
   // Set NEXT_PUBLIC_RAGLY_WIDGET_URL in Vercel (e.g. https://ragly-chat.vercel.app)
   const baseUrl = (process.env.NEXT_PUBLIC_RAGLY_WIDGET_URL as string) || (typeof window !== 'undefined' ? window.location.origin : '');
+
+  // Fetch API Keys
+  useEffect(() => {
+    const fetchApiKeys = async () => {
+      try {
+        const res = await fetch("/api/api-keys");
+        const data = await res.json();
+        if (res.ok && data.apiKeys) {
+          setApiKeys(data.apiKeys);
+          if (data.apiKeys.length > 0) {
+            setSelectedApiKey(data.apiKeys[0].key_value);
+          }
+        }
+      } catch (error) {
+        console.error("Failed to fetch API keys:", error);
+      }
+    };
+    fetchApiKeys();
+  }, []);
 
   // Cleanup widget on unmount
   useEffect(() => {
@@ -73,7 +95,7 @@ export default function EmbedCodeGenerator({ chatbotId, chatbotName }: EmbedCode
       activateWidget();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [position, primaryColor, buttonSize, borderRadius, enableBorder, borderWidth, borderColor, borderStyle]);
+  }, [position, primaryColor, buttonSize, borderRadius, enableBorder, borderWidth, borderColor, borderStyle, selectedApiKey]);
 
   // Function to load and activate widget
   const activateWidget = () => {
@@ -81,6 +103,7 @@ export default function EmbedCodeGenerator({ chatbotId, chatbotName }: EmbedCode
       // Set configuration
       (window as any).RAGLY_API_URL = baseUrl;
       (window as any).RAGLY_CHATBOT_ID = chatbotId;
+      (window as any).RAGLY_API_KEY = selectedApiKey;
       (window as any).RAGLY_POSITION = position;
       (window as any).RAGLY_PRIMARY_COLOR = primaryColor;
       (window as any).RAGLY_BUTTON_SIZE = `${buttonSize}px`;
@@ -139,6 +162,7 @@ export default function EmbedCodeGenerator({ chatbotId, chatbotName }: EmbedCode
     // Clear window properties
     delete (window as any).RAGLY_API_URL;
     delete (window as any).RAGLY_CHATBOT_ID;
+    delete (window as any).RAGLY_API_KEY;
     delete (window as any).RAGLY_POSITION;
     delete (window as any).RAGLY_PRIMARY_COLOR;
     delete (window as any).RAGLY_BUTTON_SIZE;
@@ -162,10 +186,12 @@ export default function EmbedCodeGenerator({ chatbotId, chatbotName }: EmbedCode
 
   // Generate embed code
   const generateEmbedCode = () => {
+    const displayApiKey = selectedApiKey || 'ISI DENGAN API KEY RAGLY ANDA';
     return `<!-- Ragly Chatbot Widget -->
 <script>
   window.RAGLY_API_URL = '${baseUrl}';
   window.RAGLY_CHATBOT_ID = '${chatbotId}';
+  window.RAGLY_API_KEY = '${displayApiKey}';
   window.RAGLY_POSITION = '${position}';
   window.RAGLY_PRIMARY_COLOR = '${primaryColor}';
   window.RAGLY_BUTTON_SIZE = '${buttonSize}px';
@@ -180,6 +206,7 @@ export default function EmbedCodeGenerator({ chatbotId, chatbotName }: EmbedCode
 
   // Generate React code
   const generateReactCode = () => {
+    const displayApiKey = selectedApiKey || 'ISI DENGAN API KEY RAGLY ANDA';
     return `// Add to your React component
 import { useEffect } from 'react';
 
@@ -188,6 +215,7 @@ function App() {
     // Set configuration
     window.RAGLY_API_URL = '${baseUrl}';
     window.RAGLY_CHATBOT_ID = '${chatbotId}';
+    window.RAGLY_API_KEY = '${displayApiKey}';
     window.RAGLY_POSITION = '${position}';
     window.RAGLY_PRIMARY_COLOR = '${primaryColor}';
     window.RAGLY_BUTTON_SIZE = '${buttonSize}px';
@@ -221,10 +249,12 @@ function App() {
 
   // Generate WordPress code
   const generateWordPressCode = () => {
+    const displayApiKey = selectedApiKey || 'ISI DENGAN API KEY RAGLY ANDA';
     return `<!-- Add to your WordPress theme footer.php or use a plugin like "Insert Headers and Footers" -->
 <script>
   window.RAGLY_API_URL = '${baseUrl}';
   window.RAGLY_CHATBOT_ID = '${chatbotId}';
+  window.RAGLY_API_KEY = '${displayApiKey}';
   window.RAGLY_POSITION = '${position}';
   window.RAGLY_PRIMARY_COLOR = '${primaryColor}';
   window.RAGLY_BUTTON_SIZE = '${buttonSize}px';
@@ -315,6 +345,31 @@ function App() {
               </p>
             </div>
           )}
+
+          <div className="space-y-2">
+            <Label className="flex items-center gap-2">
+              <Code size={14} />
+              API Key <span className="text-xs text-muted-foreground font-normal">(Digunakan untuk autentikasi)</span>
+            </Label>
+            <Select value={selectedApiKey} onValueChange={setSelectedApiKey}>
+              <SelectTrigger>
+                <SelectValue placeholder="Pilih API Key" />
+              </SelectTrigger>
+              <SelectContent>
+                {apiKeys.length === 0 && <SelectItem value="none" disabled>Tidak ada API Key</SelectItem>}
+                {apiKeys.map((key) => (
+                  <SelectItem key={key.id} value={key.key_value}>
+                    {key.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {apiKeys.length === 0 && (
+              <p className="text-xs text-yellow-600 dark:text-yellow-400 mt-1">
+                Anda belum membuat API Key. Buat API Key terlebih dahulu di menu API Keys.
+              </p>
+            )}
+          </div>
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {/* Position */}
@@ -583,14 +638,22 @@ function App() {
         {/* Quick Info */}
         <div className="p-4 bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg">
           <h4 className="font-medium text-sm text-blue-900 dark:text-blue-100 mb-2">
-            📌 Cara Menggunakan Widget
+            📌 Cara Menggunakan Widget & Best Practice API Key
           </h4>
+          <ul className="text-xs text-blue-800 dark:text-blue-200 space-y-1.5 mb-3">
+            <li>• <strong>Pilih API Key:</strong> Pilih API key Anda terlebih dahulu di atas (pastikan API Key sudah dibuat).</li>
+            <li>• <strong>Preview Langsung:</strong> Klik "Terapkan di Halaman Ini" untuk test widget di halaman ini.</li>
+            <li>• <strong>Kustomisasi:</strong> Ubah posisi, warna, ukuran, dan border sesuai kebutuhan.</li>
+            <li>• <strong>Copy Code & Pasang:</strong> Salin kode lalu tempelkan ke website Anda.</li>
+          </ul>
+          
+          <h5 className="font-semibold text-xs text-blue-900 dark:text-blue-100 mt-3 mb-1">
+            🛡️ Best Practice Performa & Keamanan:
+          </h5>
           <ul className="text-xs text-blue-800 dark:text-blue-200 space-y-1.5">
-            <li>• <strong>Preview Langsung:</strong> Klik "Terapkan di Halaman Ini" untuk test widget di halaman ini</li>
-            <li>• <strong>Kustomisasi:</strong> Ubah posisi, warna, ukuran, dan border sesuai kebutuhan</li>
-            <li>• <strong>Border:</strong> Aktifkan switch "Enable Border" untuk mengatur ketebalan, style, dan warna border</li>
-            <li>• <strong>Copy Code:</strong> Salin kode untuk HTML/React/WordPress</li>
-            <li>• <strong>Pasang:</strong> Tempelkan kode ke website Anda dan widget siap digunakan! 🎉</li>
+            <li>• <strong>Keamanan:</strong> Jangan publikasikan API Key utama Anda (Master Key) pada widget frontend. Gunakan Restricted API Key khusus client.</li>
+            <li>• <strong>Performa:</strong> Penggunaan API Key ini telah dioptimasi dengan Cache. Request yang berulang tidak akan selalu query ke database melainkan memvalidasi cache API, menjaga performa chat tetap instan.</li>
+            <li>• <strong>CORS:</strong> Pastikan Anda telah mengonfigurasi pengaturan Domain URL yang diizinkan untuk mencegah penyalahgunaan API Key di website yang tidak dikenal.</li>
           </ul>
         </div>
       </CardContent>

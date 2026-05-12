@@ -129,3 +129,70 @@ CREATE TABLE IF NOT EXISTS chatbot_conversations (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
+-- Create table for User API Keys
+CREATE TABLE IF NOT EXISTS api_keys (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+    name VARCHAR(255) NOT NULL,
+    key_value VARCHAR(255) NOT NULL UNIQUE,
+    is_active BOOLEAN DEFAULT true,
+    last_used_at TIMESTAMP WITH TIME ZONE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Index for faster lookup by key value when authenticating
+CREATE INDEX IF NOT EXISTS idx_api_keys_key_value ON api_keys(key_value);
+CREATE INDEX IF NOT EXISTS idx_api_keys_user_id ON api_keys(user_id);
+
+-- Logging penggunaan API Key untuk monitoring, billing, dan rate limiting
+CREATE TABLE IF NOT EXISTS api_key_usage_logs (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    api_key_id UUID NOT NULL,
+    api_key_user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+    api_key_name_snapshot VARCHAR(255) NOT NULL,
+    api_key_value_prefix VARCHAR(32) NOT NULL,
+    chatbot_id UUID,
+    chatbot_name_snapshot VARCHAR(255),
+    session_id TEXT,
+    source TEXT NOT NULL DEFAULT 'widget',
+    request_path TEXT NOT NULL,
+    request_method TEXT NOT NULL,
+    request_ip TEXT,
+    user_agent TEXT,
+    message_length INTEGER NOT NULL DEFAULT 0,
+    response_length INTEGER NOT NULL DEFAULT 0,
+    prompt_tokens INTEGER NOT NULL DEFAULT 0,
+    completion_tokens INTEGER NOT NULL DEFAULT 0,
+    total_tokens INTEGER NOT NULL DEFAULT 0,
+    token_source TEXT NOT NULL DEFAULT 'estimated',
+    decision TEXT,
+    response_time_ms INTEGER,
+    is_success BOOLEAN NOT NULL DEFAULT TRUE,
+    error_message TEXT,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_api_key_usage_logs_api_key_id ON api_key_usage_logs(api_key_id);
+CREATE INDEX IF NOT EXISTS idx_api_key_usage_logs_user_id ON api_key_usage_logs(api_key_user_id);
+CREATE INDEX IF NOT EXISTS idx_api_key_usage_logs_created_at ON api_key_usage_logs(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_api_key_usage_logs_chatbot_id ON api_key_usage_logs(chatbot_id);
+
+-- Ringkasan usage per API key untuk dashboard dan monitoring
+CREATE OR REPLACE VIEW api_key_usage_summary AS
+SELECT
+    api_key_id,
+    api_key_user_id,
+    api_key_name_snapshot,
+    api_key_value_prefix,
+    MAX(created_at) AS last_used_at,
+    COUNT(*)::INTEGER AS total_requests,
+    COUNT(*) FILTER (WHERE is_success)::INTEGER AS successful_requests,
+    COUNT(*) FILTER (WHERE NOT is_success)::INTEGER AS failed_requests,
+    COALESCE(SUM(prompt_tokens), 0)::INTEGER AS prompt_tokens,
+    COALESCE(SUM(completion_tokens), 0)::INTEGER AS completion_tokens,
+    COALESCE(SUM(total_tokens), 0)::INTEGER AS total_tokens,
+    COALESCE(AVG(response_time_ms), 0)::NUMERIC(12, 2) AS avg_response_time_ms
+FROM api_key_usage_logs
+GROUP BY api_key_id, api_key_user_id, api_key_name_snapshot, api_key_value_prefix;
+

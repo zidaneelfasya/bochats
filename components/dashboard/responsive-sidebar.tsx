@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import Link from 'next/link';
-import { Bot, User, Menu, X, LayoutDashboard, Settings, LogOut, ChevronUp, Users, Shield } from 'lucide-react';
+import { Bot, User, Menu, X, LayoutDashboard, Settings, LogOut, ChevronUp, Users, Shield, Key, FileText } from 'lucide-react';
 import { ThemeSwitcher } from '@/components/theme-switcher';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useRouter, usePathname } from 'next/navigation';
@@ -139,6 +139,8 @@ export function Sidebar({ user, variant = "default" }: { user: any, variant?: "d
   const defaultNavItems = [
     { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
     { name: 'Chatbots', href: '/dashboard/chatbots', icon: Bot },
+    { name: 'API Keys', href: '/dashboard/api-keys', icon: Key },
+    { name: 'API Chatbot', href: '/dashboard/api-chatbot', icon: FileText },
     { name: 'Profile', href: '/dashboard/profile', icon: User },
     { name: 'Settings', href: '/dashboard/settings', icon: Settings },
   ];
