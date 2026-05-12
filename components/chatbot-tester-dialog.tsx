@@ -1,8 +1,9 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { Send, Bot, User, X, Loader2, AlertCircle } from 'lucide-react';
+import { Send, Bot, User, Loader2, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
 import {
   Dialog,
   DialogContent,
@@ -36,9 +37,14 @@ export default function ChatbotTesterDialog({
 }: ChatbotTesterDialogProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
+  const [apiKey, setApiKey] = useState('');
+  const [apiKeyInput, setApiKeyInput] = useState('');
+  const [showApiKeyPrompt, setShowApiKeyPrompt] = useState(false);
+  const [apiKeyError, setApiKeyError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const apiKeyStorageKey = `chatbot-test-api-key:${chatbotId}`;
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -54,11 +60,40 @@ export default function ChatbotTesterDialog({
       setMessages([]);
       setError(null);
       setInput('');
+      setApiKeyError(null);
+
+      const savedApiKey = window.localStorage.getItem(apiKeyStorageKey) || '';
+      setApiKey(savedApiKey);
+      setApiKeyInput(savedApiKey);
+      setShowApiKeyPrompt(!savedApiKey);
+    } else {
+      setShowApiKeyPrompt(false);
     }
-  }, [open]);
+  }, [open, apiKeyStorageKey]);
+
+  const handleSaveApiKey = () => {
+    const normalizedApiKey = apiKeyInput.trim();
+
+    if (!normalizedApiKey) {
+      setApiKeyError('API key wajib diisi untuk menjalankan test chatbot.');
+      return;
+    }
+
+    window.localStorage.setItem(apiKeyStorageKey, normalizedApiKey);
+    setApiKey(normalizedApiKey);
+    setApiKeyInput(normalizedApiKey);
+    setApiKeyError(null);
+    setShowApiKeyPrompt(false);
+  };
 
   const handleSendMessage = async () => {
     if (!input.trim() || isLoading) return;
+
+    if (!apiKey.trim()) {
+      setApiKeyError('Masukkan API key terlebih dahulu.');
+      setShowApiKeyPrompt(true);
+      return;
+    }
 
     const userMessage = input.trim();
     const timestamp = new Date().toLocaleTimeString('en-US', { 
@@ -83,6 +118,7 @@ export default function ChatbotTesterDialog({
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          Authorization: `Bearer ${apiKey.trim()}`,
         },
         body: JSON.stringify({
           message: userMessage,
@@ -90,7 +126,14 @@ export default function ChatbotTesterDialog({
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
+        const errorData = await response.json().catch(() => ({}));
+
+        if (response.status === 401) {
+          setApiKey('');
+          setApiKeyInput('');
+          setShowApiKeyPrompt(true);
+        }
+
         throw new Error(errorData.error || 'Failed to get response');
       }
 
@@ -148,6 +191,60 @@ export default function ChatbotTesterDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
+      {showApiKeyPrompt || !apiKey.trim() ? (
+        <DialogContent className="sm:max-w-[480px] p-0 gap-0">
+          <DialogHeader className="bg-gradient-to-r from-primary to-secondary p-4 rounded-t-lg">
+            <DialogTitle className="text-primary-foreground text-lg">
+              Enter API Key
+            </DialogTitle>
+            <DialogDescription className="text-primary-foreground/80 text-xs">
+              API key ini akan dipakai untuk test chatbot {chatbotName}.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="p-4 space-y-4 bg-card">
+            <div className="space-y-2">
+              <Label htmlFor="chatbot-api-key">API Key</Label>
+              <input
+                id="chatbot-api-key"
+                type="password"
+                value={apiKeyInput}
+                onChange={(e) => setApiKeyInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    handleSaveApiKey();
+                  }
+                }}
+                placeholder="Paste your API key here"
+                autoFocus
+                className="w-full px-3 py-2 rounded-lg bg-input border border-border text-foreground placeholder-muted-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+              />
+              <p className="text-xs text-muted-foreground">
+                Key ini disimpan per chatbot dan dipakai untuk setiap request test.
+              </p>
+            </div>
+
+            {apiKeyError && (
+              <Alert variant="destructive" className="py-2">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription className="text-xs">
+                  {apiKeyError}
+                </AlertDescription>
+              </Alert>
+            )}
+
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => onOpenChange(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleSaveApiKey} disabled={!apiKeyInput.trim()}>
+                Use API Key
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      ) : (
       <DialogContent className="sm:max-w-[600px] h-[700px] p-0 gap-0">
         {/* Header */}
         <DialogHeader className="bg-gradient-to-r from-primary to-secondary p-4 rounded-t-lg">
@@ -294,6 +391,7 @@ export default function ChatbotTesterDialog({
           </p>
         </div>
       </DialogContent>
+      )}
     </Dialog>
   );
 }
