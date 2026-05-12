@@ -254,7 +254,7 @@ export async function POST(
     console.log('📋 Chatbot ID:', chatbotId);
     console.log('📨 Message:', message);
     console.log('🔑 Session ID:', sessionId);
-    const requestIp = extractClientIp(request);
+    const requestIp = extractClientIp(request) || undefined;
     const userAgent = request.headers.get('user-agent') || undefined;
 
     // Validate API Key
