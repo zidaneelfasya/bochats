@@ -86,6 +86,124 @@ function StatCard({ icon: Icon, label, value, description }: { icon: any; label:
   );
 }
 
+function SkeletonBlock({ className = "" }: { className?: string }) {
+  return <div className={`animate-pulse rounded-lg bg-muted/70 ${className}`} />;
+}
+
+function AnalyticsSkeleton() {
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+        <div className="space-y-3">
+          <SkeletonBlock className="h-4 w-40" />
+          <SkeletonBlock className="h-9 w-64" />
+          <SkeletonBlock className="h-4 w-80" />
+        </div>
+        <SkeletonBlock className="h-12 w-full rounded-2xl md:w-64" />
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        {Array.from({ length: 4 }).map((_, index) => (
+          <Card key={index}>
+            <CardContent className="p-6">
+              <div className="flex items-start justify-between gap-4">
+                <div className="space-y-3">
+                  <SkeletonBlock className="h-4 w-24" />
+                  <SkeletonBlock className="h-8 w-20" />
+                  <SkeletonBlock className="h-3 w-36" />
+                </div>
+                <SkeletonBlock className="h-11 w-11 rounded-xl" />
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      <div className="grid gap-4 lg:grid-cols-3">
+        <Card className="lg:col-span-2">
+          <CardHeader>
+            <SkeletonBlock className="h-6 w-44" />
+            <SkeletonBlock className="h-4 w-28" />
+          </CardHeader>
+          <CardContent>
+            <SkeletonBlock className="h-80 w-full rounded-2xl" />
+          </CardContent>
+        </Card>
+
+        <div className="space-y-4">
+          <Card>
+            <CardHeader>
+              <SkeletonBlock className="h-6 w-28" />
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 gap-3 text-sm">
+                <SkeletonBlock className="h-20 rounded-xl" />
+                <SkeletonBlock className="h-20 rounded-xl" />
+              </div>
+              <SkeletonBlock className="mt-4 h-16 w-full rounded-xl" />
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <SkeletonBlock className="h-6 w-36" />
+            </CardHeader>
+            <CardContent className="space-y-3 text-sm">
+              {Array.from({ length: 4 }).map((_, index) => (
+                <div key={index} className="flex items-center justify-between gap-4">
+                  <SkeletonBlock className="h-4 w-24" />
+                  <SkeletonBlock className="h-4 w-20" />
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+
+      <div className="grid gap-4 lg:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <SkeletonBlock className="h-6 w-32" />
+            <SkeletonBlock className="h-4 w-56" />
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {Array.from({ length: 4 }).map((_, index) => (
+              <SkeletonBlock key={index} className="h-16 w-full rounded-xl" />
+            ))}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <SkeletonBlock className="h-6 w-40" />
+            <SkeletonBlock className="h-4 w-48" />
+          </CardHeader>
+          <CardContent className="grid gap-4 md:grid-cols-2">
+            <SkeletonBlock className="h-64 w-full rounded-2xl" />
+            <div className="space-y-3">
+              {Array.from({ length: 5 }).map((_, index) => (
+                <SkeletonBlock key={index} className="h-12 w-full rounded-xl" />
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      <Card>
+        <CardHeader>
+          <SkeletonBlock className="h-6 w-36" />
+          <SkeletonBlock className="h-4 w-44" />
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {Array.from({ length: 5 }).map((_, index) => (
+            <SkeletonBlock key={index} className="h-10 w-full rounded-xl" />
+          ))}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
 export default function ApiKeyAnalyticsPage() {
   const params = useParams<{ id: string }>();
   const apiKeyId = params?.id;
@@ -116,7 +234,7 @@ export default function ApiKeyAnalyticsPage() {
   const hourlyShape = useMemo(() => data?.dailyUsage ?? [], [data]);
 
   if (isLoading) {
-    return <p className="text-muted-foreground">Memuat analytics...</p>;
+    return <AnalyticsSkeleton />;
   }
 
   if (!data) {
